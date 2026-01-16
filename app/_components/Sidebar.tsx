@@ -1,88 +1,98 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
 
-const items = [
-  { href: "/", label: "Visão geral", desc: "KPIs e atividade" },
-  { href: "/bot", label: "Bot", desc: "Atendimento e IA" },
-  { href: "/clientes", label: "Clientes", desc: "Contas e histórico" },
-  { href: "/pipeline", label: "Funil", desc: "Etapas e conversão" },
-  { href: "/settings", label: "Configurações", desc: "Integrações e perfil" },
-  { href: "/login", label: "Login", desc: "Acesso e segurança" },
-];
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-export default function Sidebar() {
-  const path = usePathname();
+export default function BotPage() {
+  const [nome, setNome] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // carrega o que já tem salvo
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from("bot_configs")
+        .select("data")
+        .eq("id", 1)
+        .single();
+
+      if (error) {
+        console.error("ERRO LOAD:", error);
+        return;
+      }
+
+      const cfg = (data?.data ?? {}) as any;
+      setNome(cfg.nome ?? "");
+      setPrompt(cfg.prompt ?? "");
+    })();
+  }, []);
+
+  async function salvar() {
+    setLoading(true);
+
+    const payload = {
+      nome,
+      prompt,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from("bot_configs")
+      .upsert({ id: 1, data: payload }, { onConflict: "id" });
+
+    setLoading(false);
+
+    if (error) {
+      console.error("ERRO SAVE:", error);
+      alert("Erro ao salvar: " + error.message);
+      return;
+    }
+
+    alert("Salvou no Supabase ✅");
+  }
 
   return (
-    <nav style={{ display: "grid", gap: 10 }}>
-      <div style={sectionTitle}>Menu</div>
+    <div style={{ display: "grid", gap: 12 }}>
+      <h1>Bot</h1>
 
-      <div style={{ display: "grid", gap: 8 }}>
-        {items.map((it) => {
-          const active = path === it.href;
-          return (
-            <Link key={it.href} href={it.href} style={{ textDecoration: "none" }}>
-              <div style={{ ...item, ...(active ? itemActive : {}) }}>
-                <div style={{ fontWeight: 800 }}>{it.label}</div>
-                <div style={{ fontSize: 12, opacity: active ? 0.85 : 0.65 }}>
-                  {it.desc}
-                </div>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+      <label style={{ display: "grid", gap: 6 }}>
+        Nome do bot
+        <input
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
+        />
+      </label>
 
-      <div style={{ marginTop: 10 }}>
-        <div style={sectionTitle}>Atalhos</div>
-        <div style={{ display: "grid", gap: 8 }}>
-          <div style={shortcut}>
-            <div style={{ fontWeight: 800 }}>Conexões</div>
-           <div style={{ fontSize: 12, opacity: 0.7 }}>
-  Canais, integrações e permissões
-</div>
-          </div>
-          <div style={shortcut}>
-            <div style={{ fontWeight: 800 }}>Logs</div>
-            <div style={{ fontSize: 12, opacity: 0.7 }}>
-              Execuções e erros
-            </div>
-          </div>
-        </div>
-      </div>
-    </nav>
+      <label style={{ display: "grid", gap: 6 }}>
+        Prompt
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          rows={6}
+          style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
+        />
+      </label>
+
+      <button
+        onClick={salvar}
+        disabled={loading}
+        style={{
+          padding: 12,
+          borderRadius: 12,
+          border: "1px solid #ddd",
+          cursor: "pointer",
+          fontWeight: 800,
+        }}
+      >
+        {loading ? "Salvando..." : "Salvar"}
+      </button>
+    </div>
   );
 }
-
-const sectionTitle: React.CSSProperties = {
-  fontSize: 12,
-  opacity: 0.6,
-  fontWeight: 800,
-  marginTop: 6,
-  marginBottom: 4,
-  textTransform: "uppercase",
-  letterSpacing: 0.8,
-};
-
-const item: React.CSSProperties = {
-  padding: 12,
-  borderRadius: 16,
-  border: "1px solid rgba(0,0,0,0.06)",
-  background: "#fff",
-  transition: "all 120ms ease",
-};
-
-const itemActive: React.CSSProperties = {
-  border: "1px solid rgba(37,99,235,0.35)",
-  boxShadow: "0 12px 30px rgba(37,99,235,0.12)",
-  background: "linear-gradient(180deg, rgba(37,99,235,0.08), rgba(124,58,237,0.06))",
-};
-
-const shortcut: React.CSSProperties = {
-  padding: 12,
-  borderRadius: 16,
-  border: "1px dashed rgba(0,0,0,0.10)",
-  background: "rgba(0,0,0,0.02)",
-};
