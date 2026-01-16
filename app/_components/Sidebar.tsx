@@ -39,9 +39,9 @@ export default function Sidebar() {
         <div style={{ display: "grid", gap: 8 }}>
           <div style={shortcut}>
             <div style={{ fontWeight: 800 }}>Conexões</div>
-            <div style={{ fontSize: 12, opacity: 0.7 }}>
-              WhatsApp • n8n • Supabase
-            </div>
+           <div style={{ fontSize: 12, opacity: 0.7 }}>
+  Canais, integrações e permissões
+</div>
           </div>
           <div style={shortcut}>
             <div style={{ fontWeight: 800 }}>Logs</div>
