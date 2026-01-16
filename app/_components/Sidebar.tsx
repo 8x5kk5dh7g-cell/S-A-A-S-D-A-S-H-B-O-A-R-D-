@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const items = [
   { href: "/", label: "Visão geral", desc: "KPIs e atividade" },
+  { href: "/bot", label: "Bot", desc: "Atendimento e IA" },
   { href: "/clientes", label: "Clientes", desc: "Contas e histórico" },
   { href: "/pipeline", label: "Funil", desc: "Etapas e conversão" },
   { href: "/settings", label: "Configurações", desc: "Integrações e perfil" },
