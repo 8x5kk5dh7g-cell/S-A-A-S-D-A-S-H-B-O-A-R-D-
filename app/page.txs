@@ -2,7 +2,82 @@ export default function Page() {
   return (
     <div style={{ display: "grid", gap: 16 }}>
       <h1 style={{ margin: 0 }}>Visão Geral</h1>
+export default function Page() {
+  return (
+    <div style={{ display: "grid", gap: 16 }}>
+      <h1 style={{ margin: 0 }}>Visão Geral</h1>
 
+      {/* MENU (coloca aqui) */}
+      <nav style={menuStyle}>
+        <a href="/" style={linkStyle}>Visão Geral</a>
+        <a href="/clientes" style={linkStyle}>Clientes</a>
+        <a href="/pipeline" style={linkStyle}>Pipeline</a>
+        <a href="/settings" style={linkStyle}>Settings</a>
+        <a href="/login" style={linkStyle}>Login</a>
+      </nav>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        <Card title="Leads (7d)" value="—" />
+        <Card title="Vendas (7d)" value="—" />
+        <Card title="Conversas (hoje)" value="—" />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
+        <div style={panelStyle}>
+          <h3 style={{ marginTop: 0 }}>Atividades</h3>
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            <li>Conectar Supabase</li>
+            <li>Conectar n8n</li>
+            <li>Pipeline com drag & drop</li>
+            <li>Clientes + histórico</li>
+          </ul>
+        </div>
+
+        <div style={panelStyle}>
+          <h3 style={{ marginTop: 0 }}>Próximo passo</h3>
+          <p style={{ margin: 0 }}>
+            A gente vai criar as páginas: Pipeline, Clientes, Settings e Login.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Card({ title, value }: { title: string; value: string }) {
+  return (
+    <div style={{ ...panelStyle, display: "grid", gap: 6 }}>
+      <div style={{ fontSize: 12, opacity: 0.7 }}>{title}</div>
+      <div style={{ fontSize: 24, fontWeight: 800 }}>{value}</div>
+    </div>
+  );
+}
+
+const panelStyle = {
+  background: "#fff",
+  borderRadius: 14,
+  padding: 16,
+  border: "1px solid rgba(0,0,0,0.06)",
+} satisfies Record<string, any>;
+
+const menuStyle = {
+  display: "flex",
+  gap: 10,
+  flexWrap: "wrap",
+  padding: 10,
+  borderRadius: 14,
+  border: "1px solid rgba(0,0,0,0.06)",
+  background: "#fff",
+} satisfies Record<string, any>;
+
+const linkStyle = {
+  padding: "8px 10px",
+  borderRadius: 10,
+  border: "1px solid rgba(0,0,0,0.08)",
+  textDecoration: "none",
+  color: "#111",
+  fontSize: 14,
+} satisfies Record<string, any>;
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
         <Card title="Leads (7d)" value="—" />
         <Card title="Vendas (7d)" value="—" />
