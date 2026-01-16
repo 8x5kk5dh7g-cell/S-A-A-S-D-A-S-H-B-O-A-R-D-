@@ -1,19 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from "@/lib/supabaseClient";
 
 export default function BotPage() {
   const [nome, setNome] = useState("");
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // carrega o que já tem salvo
+  // carrega do banco (id=1)
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
@@ -23,7 +18,7 @@ export default function BotPage() {
         .single();
 
       if (error) {
-        console.error("ERRO LOAD:", error);
+        console.log("ERRO LOAD:", error);
         return;
       }
 
@@ -42,6 +37,8 @@ export default function BotPage() {
       updated_at: new Date().toISOString(),
     };
 
+    console.log("SALVANDO...", payload);
+
     const { error } = await supabase
       .from("bot_configs")
       .upsert({ id: 1, data: payload }, { onConflict: "id" });
@@ -49,12 +46,12 @@ export default function BotPage() {
     setLoading(false);
 
     if (error) {
-      console.error("ERRO SAVE:", error);
+      console.log("ERRO SAVE:", error);
       alert("Erro ao salvar: " + error.message);
       return;
     }
 
-    alert("Salvou no Supabase ✅");
+    alert("Salvou ✅");
   }
 
   return (
@@ -71,11 +68,11 @@ export default function BotPage() {
       </label>
 
       <label style={{ display: "grid", gap: 6 }}>
-        Prompt
+        Prompt do atendimento
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          rows={6}
+          rows={7}
           style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
         />
       </label>
