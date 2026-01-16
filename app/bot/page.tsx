@@ -169,8 +169,19 @@ export default function Page() {
             Ativo
           </label>
 
-         <button onClick={() => console.log("CLICOU")} style={{ padding: 20, fontSize: 20 }}>
-  TESTE CLIQUE AQUI
+        <button
+  onClick={() => {
+    setMsg("CLICOU ✅");
+  }}
+  style={{
+    padding: "12px 16px",
+    borderRadius: 14,
+    border: "1px solid rgba(0,0,0,0.10)",
+    background: "#fff",
+    fontWeight: 900,
+  }}
+>
+  TESTE CLIQUE
 </button>
   }}
   disabled={saving}
