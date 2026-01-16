@@ -169,9 +169,16 @@ export default function Page() {
             Ativo
           </label>
 
-          <button onClick={save} disabled={saving || loading} style={btnPrimary}>
-            {saving ? "Salvando..." : "Salvar"}
-          </button>
+         <button
+  onClick={() => {
+    console.log("CLICOU SALVAR");
+    save();
+  }}
+  disabled={saving}
+  style={btnPrimary}
+>
+  {saving ? "Salvando..." : "Salvar"}
+</button>
         </div>
       </div>
 
