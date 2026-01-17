@@ -2,110 +2,132 @@
 
 import React, { useEffect, useState } from "react";
 
+type FormState = {
+  greeting: string;
+  evolution_url: string;
+  n8n_webhook: string;
+};
+
 export default function Page() {
-  const [evolutionUrl, setEvolutionUrl] = useState("");
-  const [n8nWebhook, setN8nWebhook] = useState("");
-  const [status, setStatus] = useState("");
+  const [form, setForm] = useState<FormState>({
+    greeting: "Oi! Como posso te ajudar?",
+    evolution_url: "",
+    n8n_webhook: "",
+  });
 
-  async function load() {
-    setStatus("Carregando...");
-    const res = await fetch("/api/bot-config", { cache: "no-store" });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string>("");
+
+  async function safeJson(res: Response) {
     const text = await res.text();
-
-    // isso aqui mata de vez o “Unexpected end of JSON input”
-    let json: any = null;
-    try { json = text ? JSON.parse(text) : null; } catch {}
-
-    if (!res.ok || !json?.ok) {
-      setStatus(ERRO GET (${res.status}): ${text || "resposta vazia"});
-      return;
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
     }
-
-    setEvolutionUrl(json.data?.evolution_url ?? "");
-    setN8nWebhook(json.data?.n8n_webhook ?? "");
-    setStatus("OK ✅");
   }
 
-  async function save() {
-    setStatus("Salvando...");
-    const res = await fetch("/api/bot-config", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        evolution_url: evolutionUrl,
-        n8n_webhook: n8nWebhook,
-      }),
-    });
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      setMsg("");
+      try {
+        const res = await fetch("/api/bot-settings", { cache: "no-store" });
+        const json = await safeJson(res);
 
-    const text = await res.text();
-    let json: any = null;
-    try { json = text ? JSON.parse(text) : null; } catch {}
+        if (!res.ok) {
+          setMsg(json?.error || "Erro ao carregar.");
+          return;
+        }
 
-    if (!res.ok || !json?.ok) {
-      setStatus(ERRO POST (${res.status}): ${text || "resposta vazia"});
-      return;
+        const data = json?.data || {};
+        setForm({
+          greeting: String(data.greeting ?? "Oi! Como posso te ajudar?"),
+          evolution_url: String(data.evolution_url ?? ""),
+          n8n_webhook: String(data.n8n_webhook ?? ""),
+        });
+      } catch {
+        setMsg("Erro ao carregar (rede).");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  async function onSave() {
+    setSaving(true);
+    setMsg("");
+    try {
+      const res = await fetch("/api/bot-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      const json = await safeJson(res);
+
+      if (!res.ok) {
+        setMsg(json?.error || "Erro ao salvar.");
+        return;
+      }
+
+      setMsg("Salvo ✅");
+    } catch {
+      setMsg("Erro ao salvar (rede).");
+    } finally {
+      setSaving(false);
     }
-
-    setStatus("Salvo ✅");
   }
 
-  useEffect(() => { load(); }, []);
+  if (loading) return <div style={{ padding: 24 }}>Carregando…</div>;
 
   return (
-    <div style={{ display: "grid", gap: 12 }}>
+    <div style={{ padding: 24, display: "grid", gap: 16, maxWidth: 720 }}>
       <h1 style={{ margin: 0 }}>Bot</h1>
 
       <label style={{ display: "grid", gap: 6 }}>
-        <b>Instância Evolution (URL)</b>
+        Mensagem de boas-vindas
         <input
-          value={evolutionUrl}
-          onChange={(e) => setEvolutionUrl(e.target.value)}
-          placeholder="https://sua-instancia.com"
-          style={inp}
+          value={form.greeting}
+          onChange={(e) => setForm((p) => ({ ...p, greeting: e.target.value }))}
+          placeholder="Ex: Oi! Como posso te ajudar?"
+          style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
         />
       </label>
 
       <label style={{ display: "grid", gap: 6 }}>
-        <b>Webhook do n8n</b>
+        Instância Evolution (URL)
         <input
-          value={n8nWebhook}
-          onChange={(e) => setN8nWebhook(e.target.value)}
+          value={form.evolution_url}
+          onChange={(e) => setForm((p) => ({ ...p, evolution_url: e.target.value }))}
+          placeholder="https://sua-instancia.com"
+          style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
+        />
+      </label>
+
+      <label style={{ display: "grid", gap: 6 }}>
+        Webhook do n8n
+        <input
+          value={form.n8n_webhook}
+          onChange={(e) => setForm((p) => ({ ...p, n8n_webhook: e.target.value }))}
           placeholder="https://n8n.../webhook/..."
-          style={inp}
+          style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
         />
       </label>
 
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        <button onClick={save} style={btn}>Salvar</button>
-        <button onClick={load} style={btn2}>Recarregar</button>
-        <span style={{ fontSize: 13, opacity: 0.85 }}>{status}</span>
+        <button
+          onClick={onSave}
+          disabled={saving}
+          style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #111" }}
+        >
+          {saving ? "Salvando..." : "Salvar"}
+        </button>
+
+        {msg && <span>{msg}</span>}
       </div>
     </div>
   );
 }
-
-const inp: React.CSSProperties = {
-  padding: 12,
-  borderRadius: 12,
-  border: "1px solid rgba(0,0,0,0.12)",
-  background: "#fff",
-};
-
-const btn: React.CSSProperties = {
-  padding: "10px 14px",
-  borderRadius: 12,
-  border: "1px solid rgba(0,0,0,0.12)",
-  background: "#111",
-  color: "#fff",
-  fontWeight: 800,
-  cursor: "pointer",
-};
-
-const btn2: React.CSSProperties = {
-  padding: "10px 14px",
-  borderRadius: 12,
-  border: "1px solid rgba(0,0,0,0.12)",
-  background: "#fff",
-  fontWeight: 800,
-  cursor: "pointer",
-};
