@@ -1,41 +1,42 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-function supabaseAdmin() {
-  const url = process.env.SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  if (!url || !key) throw new Error("Faltou SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY na Vercel");
-  return createClient(url, key);
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  // se você NÃO tiver service role, deixa anon mesmo (vai funcionar se a tabela estiver UNRESTRICTED / sem RLS travando)
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export async function GET() {
-  try {
-    const supabase = supabaseAdmin();
-    const { data, error } = await supabase
-      .from("bot_settings")
-      .select("data")
-      .eq("id", 1)
-      .single();
+  const { data, error } = await supabase
+    .from("bot_configs")
+    .select("data")
+    .eq("id", 1)
+    .maybeSingle();
 
-    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
-    return NextResponse.json({ ok: true, data: data?.data ?? {} });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? "Erro" }, { status: 500 });
-  }
+  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true, data: data?.data ?? {} });
 }
 
 export async function POST(req: Request) {
+  let body: any;
   try {
-    const body = await req.json();
-    const supabase = supabaseAdmin();
-
-    const { error } = await supabase
-      .from("bot_settings")
-      .upsert({ id: 1, data: body, updated_at: new Date().toISOString() }, { onConflict: "id" });
-
-    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
-    return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? "Erro" }, { status: 500 });
+    body = await req.json();
+  } catch {
+    // IMPORTANTÍSSIMO: evita “Unexpected end…”
+    return NextResponse.json({ ok: false, error: "Body JSON vazio ou inválido" }, { status: 400 });
   }
+
+  const payload = {
+    id: 1,
+    data: body ?? {},
+  };
+
+  const { error } = await supabase
+    .from("bot_configs")
+    .upsert(payload, { onConflict: "id" });
+
+  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+
+  return NextResponse.json({ ok: true });
 }
