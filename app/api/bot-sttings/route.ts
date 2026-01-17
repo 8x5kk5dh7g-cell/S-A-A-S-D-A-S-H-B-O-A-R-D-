@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../../../lib/supabaseClient";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const TABLE = "bot_configs";
+const ID = 1;
 
 export async function GET() {
   const { data, error } = await supabase
-    .from("bot_configs")
+    .from(TABLE)
     .select("data")
-    .eq("id", 1)
+    .eq("id", ID)
     .maybeSingle();
 
   if (error) {
@@ -21,33 +19,24 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-
-    const payload = {
-      id: 1,
-      data: {
-        evolution_url: (body.evolution_url ?? "").trim(),
-        n8n_webhook: (body.n8n_webhook ?? "").trim(),
-      },
-      updated_at: new Date().toISOString(),
-    };
-
-    const { data, error } = await supabase
-      .from("bot_configs")
-      .upsert(payload, { onConflict: "id" })
-      .select("data")
-      .single();
-
-    if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ ok: true, data: data.data });
-  } catch (e: any) {
-    return NextResponse.json(
-      { ok: false, error: e?.message ?? "Erro desconhecido" },
-      { status: 400 }
-    );
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ ok: false, error: "JSON inválido" }, { status: 400 });
   }
+
+  const payload = {
+    evolution_url: String((body as any).evolution_url ?? ""),
+    n8n_webhook: String((body as any).n8n_webhook ?? ""),
+    greeting: String((body as any).greeting ?? ""),
+  };
+
+  const { error } = await supabase
+    .from(TABLE)
+    .upsert({ id: ID, data: payload, updated_at: new Date().toISOString() }, { onConflict: "id" });
+
+  if (error) {
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
 }
