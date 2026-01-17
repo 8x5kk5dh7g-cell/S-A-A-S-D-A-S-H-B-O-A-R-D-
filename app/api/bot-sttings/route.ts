@@ -3,13 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // server only
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export async function GET() {
   const { data, error } = await supabase
-    .from("bot_settings")
-    .select("*")
+    .from("bot_configs")
+    .select("data")
     .eq("id", 1)
     .maybeSingle();
 
@@ -17,7 +17,7 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, data: data ?? null });
+  return NextResponse.json({ ok: true, data: data?.data ?? {} });
 }
 
 export async function POST(req: Request) {
@@ -26,22 +26,24 @@ export async function POST(req: Request) {
 
     const payload = {
       id: 1,
-      evolution_url: (body.evolution_url ?? "").trim(),
-      n8n_webhook: (body.n8n_webhook ?? "").trim(),
+      data: {
+        evolution_url: (body.evolution_url ?? "").trim(),
+        n8n_webhook: (body.n8n_webhook ?? "").trim(),
+      },
       updated_at: new Date().toISOString(),
     };
 
     const { data, error } = await supabase
-      .from("bot_settings")
+      .from("bot_configs")
       .upsert(payload, { onConflict: "id" })
-      .select()
+      .select("data")
       .single();
 
     if (error) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, data });
+    return NextResponse.json({ ok: true, data: data.data });
   } catch (e: any) {
     return NextResponse.json(
       { ok: false, error: e?.message ?? "Erro desconhecido" },
