@@ -3,35 +3,21 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // server only
 );
 
-const DEFAULT_DATA = {
-  nome: "Atendente",
-  mensagemBoasVindas: "Oi! Como posso te ajudar?",
-  evolutionUrl: "",
-  n8nWebhookUrl: "",
-};
-
 export async function GET() {
-  try {
-    const { data, error } = await supabase
-      .from("bot_configs")
-      .select("id,data")
-      .eq("id", 1)
-      .maybeSingle();
+  const { data, error } = await supabase
+    .from("bot_settings")
+    .select("*")
+    .eq("id", 1)
+    .maybeSingle();
 
-    if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({
-      ok: true,
-      data: data?.data ?? DEFAULT_DATA,
-    });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? "Erro" }, { status: 500 });
+  if (error) {
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
+
+  return NextResponse.json({ ok: true, data: data ?? null });
 }
 
 export async function POST(req: Request) {
@@ -39,27 +25,27 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     const payload = {
-      nome: String(body?.nome ?? "Atendente"),
-      mensagemBoasVindas: String(body?.mensagemBoasVindas ?? ""),
-      evolutionUrl: String(body?.evolutionUrl ?? ""),
-      n8nWebhookUrl: String(body?.n8nWebhookUrl ?? ""),
+      id: 1,
+      evolution_url: (body.evolution_url ?? "").trim(),
+      n8n_webhook: (body.n8n_webhook ?? "").trim(),
+      updated_at: new Date().toISOString(),
     };
 
     const { data, error } = await supabase
-      .from("bot_configs")
-      .upsert(
-        { id: 1, data: payload, updated_at: new Date().toISOString() },
-        { onConflict: "id" }
-      )
-      .select("id,data")
+      .from("bot_settings")
+      .upsert(payload, { onConflict: "id" })
+      .select()
       .single();
 
     if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, data: data.data });
+    return NextResponse.json({ ok: true, data });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? "Erro" }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: e?.message ?? "Erro desconhecido" },
+      { status: 400 }
+    );
   }
 }
