@@ -17,8 +17,6 @@ export default function Sidebar() {
 
   return (
     <nav style={{ display: "grid", gap: 10 }}>
-      <div style={sectionTitle}>Menu</div>
-
       <div style={{ display: "grid", gap: 8 }}>
         {items.map((it) => {
           const active = path === it.href;
@@ -37,16 +35,6 @@ export default function Sidebar() {
     </nav>
   );
 }
-
-const sectionTitle: React.CSSProperties = {
-  fontSize: 12,
-  opacity: 0.6,
-  fontWeight: 800,
-  marginTop: 6,
-  marginBottom: 4,
-  textTransform: "uppercase",
-  letterSpacing: 0.8,
-};
 
 const item: React.CSSProperties = {
   padding: 12,
