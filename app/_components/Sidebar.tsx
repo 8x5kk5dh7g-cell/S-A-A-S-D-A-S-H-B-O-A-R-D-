@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import React from "react";
 
 const items = [
   { href: "/", label: "Visão geral", desc: "KPIs e atividade" },
@@ -17,6 +18,8 @@ export default function Sidebar() {
 
   return (
     <nav style={{ display: "grid", gap: 10 }}>
+      <div style={sectionTitle}>Menu</div>
+
       <div style={{ display: "grid", gap: 8 }}>
         {items.map((it) => {
           const active = path === it.href;
@@ -36,12 +39,21 @@ export default function Sidebar() {
   );
 }
 
+const sectionTitle: React.CSSProperties = {
+  fontSize: 12,
+  opacity: 0.6,
+  fontWeight: 800,
+  marginTop: 6,
+  marginBottom: 4,
+  textTransform: "uppercase",
+  letterSpacing: 0.8,
+};
+
 const item: React.CSSProperties = {
   padding: 12,
   borderRadius: 16,
   border: "1px solid rgba(0,0,0,0.06)",
   background: "#fff",
-  transition: "all 120ms ease",
 };
 
 const itemActive: React.CSSProperties = {
