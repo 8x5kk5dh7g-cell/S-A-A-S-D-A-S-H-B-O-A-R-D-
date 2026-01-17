@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
+import { supabase } from "../../lib/supabaseClient";
 const input: React.CSSProperties = {
   width: "100%",
   padding: "10px 12px",
