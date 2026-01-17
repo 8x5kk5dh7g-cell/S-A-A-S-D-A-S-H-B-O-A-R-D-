@@ -22,14 +22,16 @@ export async function POST(req: Request) {
   let body: any = null;
   try {
     body = await req.json();
-  } catch {
+  } catch {}
+
+  if (!body || typeof body !== "object") {
     return NextResponse.json({ ok: false, error: "JSON inválido" }, { status: 400 });
   }
 
   const payload = {
-    evolution_url: String(body?.evolution_url ?? ""),
-    n8n_webhook: String(body?.n8n_webhook ?? ""),
-    greeting: String(body?.greeting ?? ""),
+    evolution_url: String(body.evolution_url ?? ""),
+    n8n_webhook: String(body.n8n_webhook ?? ""),
+    greeting: String(body.greeting ?? ""),
   };
 
   const { error } = await supabase
