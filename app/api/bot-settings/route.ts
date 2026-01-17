@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabase } from "../../../lib/supabaseClient";
 
 const TABLE = "bot_configs";
-const ID = 1;
+const ID = "00000000-0000-0000-0000-000000000001";
 
 export async function GET() {
   const { data, error } = await supabase
