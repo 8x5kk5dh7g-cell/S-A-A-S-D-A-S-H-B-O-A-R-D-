@@ -1,45 +1,41 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/app/lib/supabaseServer";
+import { createClient } from "@supabase/supabase-js";
 
-const TABLE = "bot_configs";
-const ID = "00000000-0000-0000-0000-000000000001";
+export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const { data, error } = await supabaseAdmin
-    .from(TABLE)
-    .select("data")
-    .eq("id", ID)
-    .maybeSingle();
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (error) {
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  if (!url || !key) {
+    throw new Error("Missing SUPABASE envs (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY)");
   }
 
-  return NextResponse.json({ ok: true, data: data?.data ?? {} });
+  return createClient(url, key, {
+    auth: { persistSession: false },
+  });
 }
 
+// GET: só pra testar se rota está viva
+export async function GET() {
+  return NextResponse.json({ ok: true, route: "/api/bot-settings" });
+}
+
+// POST: salva configs no Supabase
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => null);
+  const supabase = getSupabase();
+  const body = await req.json().catch(() => ({}));
 
-  if (!body || typeof body !== "object") {
-    return NextResponse.json({ ok: false, error: "JSON inválido" }, { status: 400 });
-  }
+  // Ajuste pro nome real da sua tabela/colunas
+  // Exemplo: tabela bot_configs com colunas: id (uuid), data (jsonb)
+  const id = body?.id ?? "00000000-0000-0000-0000-000000000001";
 
-  const payload = {
-    evolution_url: String((body as any).evolution_url ?? ""),
-    n8n_webhook: String((body as any).n8n_webhook ?? ""),
-    greeting: String((body as any).greeting ?? ""),
-  };
-
-  const { error } = await supabaseAdmin
-    .from(TABLE)
-    .upsert(
-      { id: ID, data: payload, updated_at: new Date().toISOString() },
-      { onConflict: "id" }
-    );
+  const { error } = await supabase
+    .from("bot_configs")
+    .upsert({ id, data: body }, { onConflict: "id" });
 
   if (error) {
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });
