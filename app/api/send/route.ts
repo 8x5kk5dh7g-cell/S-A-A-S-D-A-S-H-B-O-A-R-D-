@@ -1,36 +1,71 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabaseClient";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-// ajuste se sua tabela/coluna forem outras:
 const TABLE = "bot_configs";
+
+// use UUID (você já apanhou disso)
 const ID = "00000000-0000-0000-0000-000000000001";
 
+export async function GET() {
+  // só pra você testar no navegador sem 404
+  return NextResponse.json({ ok: true, route: "/api/send (use POST)" });
+}
+
 export async function POST(req: Request) {
-  const payload = await req.json().catch(() => null);
-  if (!payload) return NextResponse.json({ ok: false, error: "JSON inválido" }, { status: 400 });
+  try {
+    const body = await req.json();
 
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select("data")
-    .eq("id", ID)
-    .maybeSingle();
+    const phone = String(body?.phone ?? body?.to ?? "");
+    const text = String(body?.text ?? body?.message ?? "");
 
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    if (!phone || !text) {
+      return NextResponse.json(
+        { ok: false, error: "Campos obrigatórios: phone e text" },
+        { status: 400 }
+      );
+    }
 
-  const webhook = String((data as any)?.data?.n8n_webhook ?? "");
-  if (!webhook) return NextResponse.json({ ok: false, error: "n8n_webhook vazio" }, { status: 400 });
+    // Busca config salva no Supabase
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select("data")
+      .eq("id", ID)
+      .maybeSingle();
 
-  const r = await fetch(webhook, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+    if (error) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    }
 
-  const text = await r.text();
-  return NextResponse.json({ ok: r.ok, status: r.status, n8n: text });
+    const cfg = (data?.data ?? {}) as any;
+    const n8nWebhook = String(cfg.n8n_webhook ?? "");
+
+    if (!n8nWebhook.startsWith("http")) {
+      return NextResponse.json(
+        { ok: false, error: "n8n_webhook não configurado no painel do SaaS" },
+        { status: 400 }
+      );
+    }
+
+    // Dispara pro n8n
+    const r = await fetch(n8nWebhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, text }),
+    });
+
+    const respText = await r.text().catch(() => "");
+    if (!r.ok) {
+      return NextResponse.json(
+        { ok: false, error: n8n respondeu ${r.status}, details: respText },
+        { status: 502 }
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    return NextResponse.json(
+      { ok: false, error: e?.message ?? "Erro inesperado" },
+      { status: 500 }
+    );
+  }
 }
